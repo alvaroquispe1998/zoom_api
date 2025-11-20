@@ -158,3 +158,95 @@ export async function listLicensedUsers({ pageSize = cfg.zoomPageSize || 30 } = 
 
   return all;
 }
+
+// 🔹 Listar TODOS los workspaces de Zoom (paginando hasta el final)
+export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } = {}) {
+  let next_page_token;
+  const all = [];
+
+  do {
+    const { data } = await zoomApi.get("/workspaces", {
+      params: {
+        page_size: pageSize,
+        next_page_token,
+      },
+    });
+
+    // Zoom devuelve la lista dentro de alguna propiedad (según versión),
+    // pero normalmente es "workspaces".
+    const items =
+      data?.workspaces ||
+      data?.list ||
+      data?.workspaces_list ||
+      [];
+
+    all.push(...items);
+    next_page_token = data?.next_page_token;
+  } while (next_page_token);
+
+  return all; // devolvemos solo el array de workspaces
+}
+
+// 🔹 Listar reservas de UN workspace
+export async function listWorkspaceReservationsZoom({
+  workspaceId,
+  from,
+  to,
+  userId,
+} = {}) {
+  if (!workspaceId) {
+    throw Object.assign(new Error("workspaceId es requerido"), { status: 400 });
+  }
+
+  const { data } = await zoomApi.get(
+    `/workspaces/${encodeURIComponent(workspaceId)}/reservations`,
+    {
+      params: {
+        from,           // ISO UTC (ej: 2025-11-20T00:00:00Z)
+        to,             // ISO UTC
+        user_id: userId // opcional, filtra por usuario
+      },
+    }
+  );
+
+  return data; // Zoom devuelve { from, to, reservations: [...] }
+}
+
+// 🔹 Crear una reserva en un workspace
+export async function createWorkspaceReservationZoom({ workspaceId, payload }) {
+  if (!workspaceId) {
+    throw Object.assign(new Error("workspaceId es requerido"), { status: 400 });
+  }
+  if (!payload?.start_time || !payload?.end_time) {
+    throw Object.assign(
+      new Error("start_time y end_time son obligatorios"),
+      { status: 400 }
+    );
+  }
+
+  const { data } = await zoomApi.post(
+    `/workspaces/${encodeURIComponent(workspaceId)}/reservations`,
+    payload
+  );
+
+  return data;
+}
+
+// 🔹 Eliminar una reserva
+export async function deleteWorkspaceReservationZoom({ workspaceId, reservationId }) {
+  if (!workspaceId || !reservationId) {
+    throw Object.assign(
+      new Error("workspaceId y reservationId son obligatorios"),
+      { status: 400 }
+    );
+  }
+
+  await zoomApi.delete(
+    `/workspaces/${encodeURIComponent(workspaceId)}/reservations/${encodeURIComponent(
+      reservationId
+    )}`
+  );
+
+  // Zoom responde 204 sin body
+  return true;
+}
