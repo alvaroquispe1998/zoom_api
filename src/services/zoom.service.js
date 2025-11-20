@@ -159,7 +159,6 @@ export async function listLicensedUsers({ pageSize = cfg.zoomPageSize || 30 } = 
   return all;
 }
 
-// 🔹 Listar TODOS los workspaces de Zoom (paginando hasta el final)
 export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } = {}) {
   let next_page_token;
   const all = [];
@@ -169,23 +168,20 @@ export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } =
       params: {
         page_size: pageSize,
         next_page_token,
+        // ❌ NADA de location_id aquí
       },
     });
 
-    // Zoom devuelve la lista dentro de alguna propiedad (según versión),
-    // pero normalmente es "workspaces".
-    const items =
-      data?.workspaces ||
-      data?.list ||
-      data?.workspaces_list ||
-      [];
-
+    const items = data?.workspaces || data?.list || [];
     all.push(...items);
+
     next_page_token = data?.next_page_token;
   } while (next_page_token);
 
-  return all; // devolvemos solo el array de workspaces
+  return all;
 }
+
+
 
 // 🔹 Listar reservas de UN workspace
 export async function listWorkspaceReservationsZoom({
@@ -249,4 +245,45 @@ export async function deleteWorkspaceReservationZoom({ workspaceId, reservationI
 
   // Zoom responde 204 sin body
   return true;
+}
+
+
+// 🔹 Listar Zoom Room locations (para usar como location_id en /workspaces)
+/**
+ * Lista ubicaciones de Zoom Rooms (location hierarchy).
+ * En Zoom, estas ubicaciones se usan como location_id para Workspaces.
+ *
+ * @param {object} opts
+ * @param {string} [opts.parentLocationId]  // opcional, filtra por padre
+ * @param {string} [opts.type]             // opcional, tipo de ubicación (building, floor, etc.)
+ * @param {number} [opts.pageSize=30]
+ */
+export async function listRoomLocationsZoom({
+  parentLocationId,
+  type,
+  pageSize = cfg.zoomPageSize || 30,
+} = {}) {
+  let next_page_token;
+  const all = [];
+
+  do {
+    const params = {
+      page_size: pageSize,
+      next_page_token,
+    };
+
+    // solo mandamos filtros si vienen con valor
+    if (parentLocationId) params.parent_location_id = parentLocationId;
+    if (type) params.type = type;
+
+    const { data } = await zoomApi.get("/rooms/locations", { params });
+
+    // Zoom suele devolver "locations"
+    const locations = data?.locations || [];
+    all.push(...locations);
+
+    next_page_token = data?.next_page_token;
+  } while (next_page_token);
+
+  return all;
 }

@@ -1,4 +1,3 @@
-// src/routes/workspaces.route.js
 import { Router } from "express";
 import {
   listWorkspaces,
@@ -6,19 +5,28 @@ import {
   createReservation,
   deleteReservation,
 } from "../services/workspace.service.js";
+import { listRoomLocationsZoom } from "../services/zoom.service.js"; // ⬅️ NUEVO
+
 
 const router = Router();
 
 // ✅ 1. LISTAR ESPACIOS DE TRABAJO
-// GET /api/workspaces
-router.get("/", async (_req, res, next) => {
+// GET /api/workspaces?location_id=xxx
+router.get("/", async (req, res, next) => {
   try {
-    const data = await listWorkspaces();
-    return res.json(data);
+    const { location_id } = req.query; // <-- lo lees del query
+
+    const { total, workspaces } = await listWorkspaces({
+      locationId: location_id || null, // se lo pasas al service
+    });
+
+    return res.json({ total, workspaces });
   } catch (err) {
     next(err);
   }
 });
+
+
 
 // ✅ 2. LISTAR RESERVAS DE UN ESPACIO
 // GET /api/workspaces/:id/reservations?from=...&to=...&timezone=...&user_id=...
@@ -85,4 +93,32 @@ router.delete("/:id/reservations/:reservationId", async (req, res, next) => {
   }
 });
 
+// ✅ EXTRA: LISTAR LOCATIONS (para saber qué location_id usar)
+// GET /api/workspaces/locations?parent_location_id=&type=&page_size=
+router.get("/locations", async (req, res, next) => {
+  try {
+    const {
+      parent_location_id: parentLocationId,
+      type,
+      page_size,
+    } = req.query;
+
+    const locations = await listRoomLocationsZoom({
+      parentLocationId: parentLocationId || undefined,
+      type: type || undefined,
+      pageSize: page_size ? Number(page_size) : undefined,
+    });
+
+    return res.json({
+      total: locations.length,
+      locations,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 export default router;
+
+
