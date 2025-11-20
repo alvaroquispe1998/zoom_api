@@ -159,6 +159,7 @@ export async function listLicensedUsers({ pageSize = cfg.zoomPageSize || 30 } = 
   return all;
 }
 
+// 🔹 Lista TODOS los workspaces desde Zoom
 export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } = {}) {
   let next_page_token;
   const all = [];
@@ -180,6 +181,7 @@ export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } =
 
   return all;
 }
+
 
 
 

@@ -9,6 +9,7 @@ import {
 } from "./zoom.service.js";
 
 // 🔹 1. Listar espacios de trabajo (workspaces de Zoom)
+// 1. Listar espacios de trabajo (workspaces de Zoom)
 export async function listWorkspaces({ locationId } = {}) {
   const all = await listWorkspacesZoom();  // 🔸 NO le pasamos location_id a Zoom
 
@@ -21,6 +22,7 @@ export async function listWorkspaces({ locationId } = {}) {
 
   return { total: filtered.length, workspaces: filtered };
 }
+
 
 // 🔹 2. Listar reservas de un workspace
 export async function listReservations({
