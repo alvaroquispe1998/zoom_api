@@ -14,10 +14,10 @@ const router = Router();
 // GET /api/workspaces?location_id=xxx
 router.get("/", async (req, res, next) => {
   try {
-    const { location_id } = req.query; // <-- lo lees del query
+    const { location_id } = req.query;
 
     const { total, workspaces } = await listWorkspaces({
-      locationId: location_id || null, // se lo pasas al service
+      locationId: location_id || null,
     });
 
     return res.json({ total, workspaces });
@@ -25,7 +25,6 @@ router.get("/", async (req, res, next) => {
     next(err);
   }
 });
-
 
 
 // ✅ 2. LISTAR RESERVAS DE UN ESPACIO

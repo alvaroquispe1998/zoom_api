@@ -160,16 +160,19 @@ export async function listLicensedUsers({ pageSize = cfg.zoomPageSize || 30 } = 
 }
 
 // 🔹 Lista TODOS los workspaces desde Zoom
+// 🔹 Listar TODOS los workspaces desde Zoom (sin filtros)
 export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } = {}) {
   let next_page_token;
   const all = [];
 
   do {
+    console.log("[ZOOM] GET /workspaces", { pageSize, next_page_token });
+
     const { data } = await zoomApi.get("/workspaces", {
       params: {
         page_size: pageSize,
         next_page_token,
-        // ❌ NADA de location_id aquí
+        // 👇 IMPORTANTÍSIMO: aquí NO va location_id
       },
     });
 
@@ -181,8 +184,6 @@ export async function listWorkspacesZoom({ pageSize = cfg.zoomPageSize || 30 } =
 
   return all;
 }
-
-
 
 
 // 🔹 Listar reservas de UN workspace
