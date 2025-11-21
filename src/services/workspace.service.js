@@ -17,7 +17,6 @@ export async function listWorkspaces({ locationId } = {}) {
   };
 }
 
-
 // 🔹 2. Listar reservas de un workspace
 export async function listReservations({
   workspaceId,
@@ -58,6 +57,8 @@ export async function listReservations({
 }
 
 // 🔹 3. Crear reserva en un workspace
+// src/services/workspace.service.js
+
 export async function createReservation({
   workspaceId,
   start_time,
@@ -94,14 +95,15 @@ export async function createReservation({
   }
 
   const payload = {
-    // Zoom espera UTC con Z
-    start_time: toUTC(startLocal).toISOString(),
-    end_time: toUTC(endLocal).toISOString(),
+    // ⬇️ EXACTAMENTE igual que el body que funcionó en Postman
+    start_time: toUTC(startLocal).format("YYYY-MM-DD[T]HH:mm:ss[Z]"),
+    end_time:   toUTC(endLocal).format("YYYY-MM-DD[T]HH:mm:ss[Z]"),
+    timezone:   tz,
   };
 
-  if (topic) payload.topic = topic;
+  if (topic)       payload.topic = topic;
   if (reserve_for) payload.reserve_for = reserve_for; // Zoom User ID
-  if (meeting) payload.meeting = meeting;            // objeto meeting si es Room
+  if (meeting)     payload.meeting = meeting;         // objeto meeting si es Room
 
   const data = await createWorkspaceReservationZoom({ workspaceId, payload });
   return data;

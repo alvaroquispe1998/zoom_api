@@ -53,7 +53,10 @@ async function getAccessToken() {
 const zoomApi = axios.create({
   baseURL: ZOOM_BASE,
   timeout: 10000,
-  httpsAgent
+  httpsAgent,
+  headers: {
+    "Content-Type": "application/json"   // 👈 forzamos header limpio
+  }
 });
 
 // Inyecta Bearer automáticamente en cada request
@@ -191,7 +194,6 @@ export async function listWorkspacesZoom({
   return all;
 }
 
-
 // 🔹 Listar reservas de UN workspace
 export async function listWorkspaceReservationsZoom({
   workspaceId,
@@ -229,9 +231,23 @@ export async function createWorkspaceReservationZoom({ workspaceId, payload }) {
     );
   }
 
-  const { data } = await zoomApi.post(
-    `/workspaces/${encodeURIComponent(workspaceId)}/reservations`,
-    payload
+  // Token igual que usa zoomApi
+  const token = await getAccessToken();
+
+  // Log para verificar
+  console.log("[ZOOM] body OBJ =", payload);
+
+  // ⚠️ Llamada directa, sin zoomApi ni interceptores
+  const { data } = await axios.post(
+    `${ZOOM_BASE}/workspaces/${encodeURIComponent(workspaceId)}/reservations`,
+    payload,
+    {
+      httpsAgent,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
   );
 
   return data;
