@@ -10,20 +10,12 @@ import {
 
 // 🔹 1. Listar espacios de trabajo (workspaces de Zoom)
 export async function listWorkspaces({ locationId } = {}) {
-  // Traemos TODOS los workspaces de Zoom
-  const all = await listWorkspacesZoom();
-
-  // Si NO mandas locationId -> devolvemos todo
-  let filtered = all;
-
-  // Si SÍ mandas locationId -> filtramos en memoria
-  if (locationId) {
-    filtered = all.filter(ws => String(ws.location_id) === String(locationId));
-  }
-
-  return { total: filtered.length, workspaces: filtered };
+  const workspaces = await listWorkspacesZoom({ locationId });
+  return {
+    total: workspaces.length,
+    workspaces,
+  };
 }
-
 
 
 // 🔹 2. Listar reservas de un workspace

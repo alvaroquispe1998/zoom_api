@@ -16,16 +16,15 @@ router.get("/", async (req, res, next) => {
   try {
     const { location_id } = req.query;
 
-    const { total, workspaces } = await listWorkspaces({
+    const result = await listWorkspaces({
       locationId: location_id || null,
     });
 
-    return res.json({ total, workspaces });
+    return res.json(result); // { total, workspaces }
   } catch (err) {
     next(err);
   }
 });
-
 
 // ✅ 2. LISTAR RESERVAS DE UN ESPACIO
 // GET /api/workspaces/:id/reservations?from=...&to=...&timezone=...&user_id=...
