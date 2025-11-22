@@ -103,7 +103,7 @@ export async function createReservation({
 
   if (topic)       payload.topic = topic;
   if (reserve_for) payload.reserve_for = reserve_for; // Zoom User ID
-  if (meeting)     payload.meeting = meeting;         // objeto meeting si es Room
+  // if (meeting)     payload.meeting = meeting;         // objeto meeting si es Room
 
   const data = await createWorkspaceReservationZoom({ workspaceId, payload });
   return data;
