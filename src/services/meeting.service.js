@@ -2,7 +2,6 @@
 import { cfg } from "../config/env.js";
 import { listMeetingsAll, createMeetingZoom } from "./zoom.service.js";
 import { parseLocal, toUTC } from "../utils/time.js";
-
 /**
  * Une listas de reuniones LIVE y UPCOMING evitando duplicados.
  * Si un mismo (id, occurrence_id) aparece en ambos, se prioriza LIVE.
@@ -159,4 +158,69 @@ export async function chooseHostAndCreate({ topic, agenda, startLocal, endLocal,
   console.timeEnd("[choose]");
   return { conflict: true, detail: checked };
 }
+//AGREDADO PARA OBTENER ULTIMAS REUNIONES POR TEMA
+export async function getLastMeetingsByTopic({ hosts } = {}) {
+  // 1) Determinar lista de hosts
+  let hostList = Array.isArray(hosts) && hosts.length ? [...hosts] : [];
 
+  // Si no vienen por parámetro, tomamos los de host.json
+  if (!hostList.length) {
+    const fromFile = await loadHosts();
+    hostList.push(...fromFile);
+  }
+
+  // Como fallback extra, aprovechamos lo de env si lo usas
+  if (!hostList.length && Array.isArray(cfg.hostsEnv) && cfg.hostsEnv.length) {
+    hostList.push(...cfg.hostsEnv);
+  }
+
+  // Fallback final: singleUserId si lo tuvieras configurado
+  if (!hostList.length && cfg.singleUserId) {
+    hostList.push(cfg.singleUserId);
+  }
+
+  if (!hostList.length) {
+    throw Object.assign(
+      new Error("No hay hosts configurados para buscar reuniones"),
+      { status: 400 }
+    );
+  }
+
+  const topicsMap = new Map();
+  const pageSize = cfg.zoomPageSize || 20;
+
+  for (const userId of hostList) {
+    // 2) Traer reuniones SCHEDULED del usuario
+    const meetings = await listMeetingsAll({
+      userId,
+      type: "scheduled",
+      pageSize,
+      // stopAt: opcional si quieres cortar antes
+    });
+
+    for (const m of meetings) {
+      if (!m.topic) continue; // ignoramos sin topic
+
+      const topic = m.topic;
+      const { startUTC, endUTC } = meetingEndUTC(m); // ya existe en tu archivo
+
+      const current = topicsMap.get(topic);
+      // Si no hay registro o esta reunión termina más tarde, se reemplaza
+      if (!current || endUTC.isAfter(current.endUTC)) {
+        topicsMap.set(topic, {
+          topic,
+          user_id: userId,
+          meeting_id: m.id,
+          start_time: startUTC.toISOString(),
+          end_time: endUTC.toISOString(),
+          duration: m.duration,
+          join_url: m.join_url,
+          endUTC, // solo interno para comparación
+        });
+      }
+    }
+  }
+
+  // 3) Devolvemos un array plano sin el campo interno endUTC
+  return Array.from(topicsMap.values()).map(({ endUTC, ...rest }) => rest);
+}

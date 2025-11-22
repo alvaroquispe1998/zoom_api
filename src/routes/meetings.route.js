@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { cfg } from "../config/env.js";
 import { parseLocal } from "../utils/time.js";
-import { chooseHostAndCreate } from "../services/meeting.service.js";
+import { chooseHostAndCreate, getLastMeetingsByTopic } from "../services/meeting.service.js";
 import { deleteMeetingZoom, listLicensedUsers } from "../services/zoom.service.js";
 
 const router = Router();
@@ -83,7 +83,7 @@ router.delete("/:id", async (req, res, next) => {
 router.get("/users/licensed", async (_req, res, next) => {
   try {
     const users = await listLicensedUsers();
-
+    
     // Si quieres devolver solo información básica:
     const simplified = users.map(u => ({
       id: u.id,
@@ -98,6 +98,33 @@ router.get("/users/licensed", async (_req, res, next) => {
     next(err);
   }
 });
+
+// ====== NUEVO: última reunión por tema (distinct por topic) ======
+// GET /api/meetings/last-by-topic?hosts=correo1,correo2
+router.get("/last-by-topic", async (req, res, next) => {
+  try {
+    const { hosts } = req.query;
+
+    // hosts opcional: lista separada por comas
+    let hostsArr = undefined;
+    if (hosts) {
+      hostsArr = String(hosts)
+        .split(",")
+        .map((h) => h.trim())
+        .filter(Boolean);
+    }
+
+    const items = await getLastMeetingsByTopic({ hosts: hostsArr });
+
+    return res.json({
+      // total: items.length,
+      items,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export default router;
     
