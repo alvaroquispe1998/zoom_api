@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { cfg } from "../config/env.js";
 import { parseLocal } from "../utils/time.js";
-import { chooseHostAndCreate, getLastMeetingsByTopic } from "../services/meeting.service.js";
+import { chooseHostAndCreate, getLastMeetingsByTopic, listMeetingsForHosts } from "../services/meeting.service.js";
 import { deleteMeetingZoom, listLicensedUsers } from "../services/zoom.service.js";
 
 const router = Router();
@@ -125,6 +125,31 @@ router.get("/last-by-topic", async (req, res, next) => {
   }
 });
 
+// ====== NUEVO: listar reuniones de TODOS los hosts de host.json ======
+// GET /api/meetings/hosts?type=scheduled&from=2025-11-01&to=2025-11-30&topic=CLASE&timezone=America/Lima
+router.get("/hosts", async (req, res, next) => {
+  try {
+    const {
+      type,
+      from,
+      to,
+      topic,
+      timezone,
+    } = req.query;
+
+    const data = await listMeetingsForHosts({
+      type: type || "scheduled",
+      from,
+      to,
+      topic,
+      timezone,
+    });
+
+    return res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;
     

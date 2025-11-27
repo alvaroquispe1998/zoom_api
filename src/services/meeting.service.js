@@ -224,3 +224,88 @@ export async function getLastMeetingsByTopic({ hosts } = {}) {
   // 3) Devolvemos un array plano sin el campo interno endUTC
   return Array.from(topicsMap.values()).map(({ endUTC, ...rest }) => rest);
 }
+
+
+
+export async function listMeetingsForHosts({
+  type = "scheduled",
+  from,
+  to,
+  topic,
+  timezone,
+} = {}) {
+  const tz = timezone || cfg.tzDefault || "America/Lima";
+
+  const hosts = await loadHosts();
+  if (!hosts.length) {
+    throw Object.assign(
+      new Error("No hay hosts configurados en host.json"),
+      { status: 500 }
+    );
+  }
+
+  let fromLocal = null;
+  let toLocal = null;
+
+  if (from) {
+    fromLocal = parseLocal(from, tz);
+    if (!fromLocal.isValid()) {
+      throw Object.assign(new Error("Parámetro 'from' inválido"), { status: 400 });
+    }
+  }
+
+  if (to) {
+    toLocal = parseLocal(to, tz);
+    if (!toLocal.isValid()) {
+      throw Object.assign(new Error("Parámetro 'to' inválido"), { status: 400 });
+    }
+  }
+
+  const topicFilter = topic ? String(topic).toLowerCase() : null;
+
+  const allMeetings = [];
+
+  for (const userId of hosts) {
+    // Trae todas las reuniones del tipo indicado para ese host
+    const meetings = await listMeetingsAll({
+      userId,
+      type,
+      pageSize: cfg.zoomPageSize || 30,
+    });
+
+    for (const m of meetings) {
+      // start_time viene en ISO UTC desde Zoom
+      const startUTC = parseLocal(m.start_time, "UTC");
+      const startLocal = startUTC.tz(tz);
+
+      if (fromLocal && startLocal.isBefore(fromLocal)) continue;
+      if (toLocal && startLocal.isAfter(toLocal)) continue;
+
+      if (topicFilter) {
+        const t = (m.topic || "").toLowerCase();
+        if (!t.includes(topicFilter)) continue;
+      }
+
+      allMeetings.push({
+        host: userId,     // 👈 para saber de qué correo viene
+        ...m,
+      });
+    }
+  }
+
+  // Ordenamos por fecha de inicio (ascendente)
+  allMeetings.sort((a, b) => {
+    const aT = new Date(a.start_time).getTime();
+    const bT = new Date(b.start_time).getTime();
+    return aT - bT;
+  });
+
+  return {
+    total: allMeetings.length,
+    timezone: tz,
+    type,
+    from: from || null,
+    to: to || null,
+    meetings: allMeetings,
+  };
+}
