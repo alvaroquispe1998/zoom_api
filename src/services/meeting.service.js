@@ -225,8 +225,6 @@ export async function getLastMeetingsByTopic({ hosts } = {}) {
   return Array.from(topicsMap.values()).map(({ endUTC, ...rest }) => rest);
 }
 
-
-
 export async function listMeetingsForHosts({
   type = "scheduled",
   from,
@@ -274,23 +272,40 @@ export async function listMeetingsForHosts({
     });
 
     for (const m of meetings) {
-      // start_time viene en ISO UTC desde Zoom
-      const startUTC = parseLocal(m.start_time, "UTC");
-      const startLocal = startUTC.tz(tz);
+      // Convertimos hora UTC -> local
+      const startLocal = parseLocal(m.start_time, "UTC").tz(tz);
 
+      // FILTROS
       if (fromLocal && startLocal.isBefore(fromLocal)) continue;
       if (toLocal && startLocal.isAfter(toLocal)) continue;
-
       if (topicFilter) {
         const t = (m.topic || "").toLowerCase();
         if (!t.includes(topicFilter)) continue;
       }
 
+      // ===== CONVERSIÓN A HORA LOCAL (AQUÍ ESTÁ LO QUE NECESITAS) =====
+      const startLocalFormatted = startLocal.format("YYYY-MM-DD HH:mm:ss");
+
+      let endLocalFormatted = null;
+      if (m.duration) {
+        const endLocal = startLocal.add(m.duration, "minutes");
+        endLocalFormatted = endLocal.format("YYYY-MM-DD HH:mm:ss");
+      }
+
       allMeetings.push({
-        host: userId,     // 👈 para saber de qué correo viene
-        ...m,
+        host: userId,
+        // id: m.id,
+        topic: m.topic,
+        duration: m.duration,
+        start_time: startLocalFormatted,   // 👈 YA ES HORA NORMAL
+        end_time: endLocalFormatted,       // 👈 TAMBIÉN EN HORA NORMAL
+        // join_url: m.join_url,
+        // start_url: m.start_url,
+        // timezone: tz,
+        // raw: m // opcional, por si quieres ver lo original
       });
     }
+
   }
 
   // Ordenamos por fecha de inicio (ascendente)
@@ -301,11 +316,11 @@ export async function listMeetingsForHosts({
   });
 
   return {
-    total: allMeetings.length,
-    timezone: tz,
-    type,
-    from: from || null,
-    to: to || null,
+    // total: allMeetings.length,
+    // timezone: tz,
+    // type,
+    // from: from || null,
+    // to: to || null,
     meetings: allMeetings,
   };
 }
