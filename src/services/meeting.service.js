@@ -350,11 +350,13 @@ export async function listRecordingsForHosts({ from, to } = {}) {
       items.push({
         host: userId,
         meeting_id: m.meeting_id || m.id,
-        uuid: m.uuid,
+        // uuid: m.uuid,
         topic: m.topic,
-        start_time: m.start_time,
-        recording_count: m.recording_count,
-        total_size: m.total_size,
+        // start_time: m.start_time,
+        // end_time : m.end_time,
+        duration : m.duration,
+        // recording_count: m.recording_count,
+        // total_size: m.total_size,
       });
     }
   }
