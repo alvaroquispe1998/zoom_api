@@ -312,3 +312,37 @@ export async function listRoomLocationsZoom({
 
   return all;
 }
+
+// ✅ Listar grabaciones (cloud recordings) de un usuario (por rango de fechas)
+export async function listUserRecordingsZoom({
+  userId,
+  from, // "YYYY-MM-DD"
+  to,   // "YYYY-MM-DD"
+  pageSize = 30,
+} = {}) {
+  if (!userId) {
+    throw Object.assign(new Error("userId es requerido"), { status: 400 });
+  }
+
+  let next_page_token;
+  const all = [];
+
+  do {
+    const { data } = await zoomApi.get(
+      `/users/${encodeURIComponent(userId)}/recordings`,
+      {
+        params: {
+          from,
+          to,
+          page_size: pageSize,
+          next_page_token,
+        },
+      }
+    );
+
+    all.push(...(data?.meetings || []));
+    next_page_token = data?.next_page_token;
+  } while (next_page_token);
+
+  return all; // <- cada item aquí YA es una reunión grabada
+}

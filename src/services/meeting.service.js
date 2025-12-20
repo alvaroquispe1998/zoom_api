@@ -2,6 +2,7 @@
 import { cfg } from "../config/env.js";
 import { listMeetingsAll, createMeetingZoom } from "./zoom.service.js";
 import { parseLocal, toUTC } from "../utils/time.js";
+import { listUserRecordingsZoom } from "./zoom.service.js";
 /**
  * Une listas de reuniones LIVE y UPCOMING evitando duplicados.
  * Si un mismo (id, occurrence_id) aparece en ambos, se prioriza LIVE.
@@ -50,7 +51,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-async function loadHosts() {
+export async function loadHosts() {
   // __dirname en ESM
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -242,6 +243,7 @@ export async function listMeetingsForHosts({
     );
   }
 
+  
   let fromLocal = null;
   let toLocal = null;
 
@@ -322,5 +324,47 @@ export async function listMeetingsForHosts({
     // from: from || null,
     // to: to || null,
     meetings: allMeetings,
+  };
+}
+
+// ✅ Trae grabaciones de TODOS los hosts del host.json
+export async function listRecordingsForHosts({ from, to } = {}) {
+  const hosts = await loadHosts();
+  if (!hosts.length) {
+    throw Object.assign(new Error("No hay hosts configurados en host.json"), { status: 500 });
+  }
+
+  if (!from || !to) {
+    throw Object.assign(new Error("from y to son obligatorios (YYYY-MM-DD)"), { status: 400 });
+  }
+
+  const byHost = [];
+  const items = [];
+
+  for (const userId of hosts) {
+    const meetings = await listUserRecordingsZoom({ userId, from, to, pageSize: cfg.zoomPageSize || 30 });
+
+    byHost.push({ userId, total: meetings.length });
+
+    for (const m of meetings) {
+      items.push({
+        host: userId,
+        meeting_id: m.meeting_id || m.id,
+        uuid: m.uuid,
+        topic: m.topic,
+        start_time: m.start_time,
+        recording_count: m.recording_count,
+        total_size: m.total_size,
+      });
+    }
+  }
+
+  return {
+    from,
+    to,
+    hosts: hosts.length,
+    total_meetings_recorded: items.length,
+    items,
+    by_host: byHost,
   };
 }

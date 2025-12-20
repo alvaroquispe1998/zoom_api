@@ -3,6 +3,8 @@ import { cfg } from "../config/env.js";
 import { parseLocal } from "../utils/time.js";
 import { chooseHostAndCreate, getLastMeetingsByTopic, listMeetingsForHosts } from "../services/meeting.service.js";
 import { deleteMeetingZoom, listLicensedUsers } from "../services/zoom.service.js";
+import { listRecordingsForHosts } from "../services/meeting.service.js";
+
 
 const router = Router();
 
@@ -150,6 +152,19 @@ router.get("/hosts", async (req, res, next) => {
     next(err);
   }
 });
+
+// ✅ LISTAR GRABACIONES (cloud) DE TODOS LOS HOSTS
+// GET /api/meetings/recordings?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get("/recordings", async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    const data = await listRecordingsForHosts({ from, to });
+    return res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export default router;
     
