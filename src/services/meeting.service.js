@@ -362,11 +362,11 @@ export async function listRecordingsForHosts({ from, to } = {}) {
   }
 
   return {
-    from,
-    to,
-    hosts: hosts.length,
-    total_meetings_recorded: items.length,
+    // from,
+    // to,
+    // hosts: hosts.length,
+    // total_meetings_recorded: items.length,
     items,
-    by_host: byHost,
+    // by_host: byHost,
   };
 }
