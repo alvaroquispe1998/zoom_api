@@ -296,13 +296,13 @@ export async function listMeetingsForHosts({
 
       allMeetings.push({
         host: userId,
-        // id: m.id,
+        id: m.id,
         topic: m.topic,
         duration: m.duration,
         start_time: startLocalFormatted,   // 👈 YA ES HORA NORMAL
         end_time: endLocalFormatted,       // 👈 TAMBIÉN EN HORA NORMAL
-        // join_url: m.join_url,
-        // start_url: m.start_url,
+        join_url: m.join_url,
+        start_url: m.start_url,
         // timezone: tz,
         // raw: m // opcional, por si quieres ver lo original
       });
